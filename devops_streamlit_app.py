@@ -3,49 +3,54 @@ import queue
 import threading
 import time
 import uuid
+import os
 from datetime import datetime
+from typing import Optional
 
 import boto3
 import streamlit as st
 from streamlit.runtime.scriptrunner import get_script_run_ctx, add_script_run_ctx
-
 from time import sleep
 
+# Constants
+MAX_QUEUE_SIZE = 1000
+MAX_PROMPT_LENGTH = 4000
+REGION_NAME = os.getenv('AWS_REGION', 'us-east-1')
+AGENT_ALIAS_ID = os.getenv('BEDROCK_AGENT_ALIAS_ID')
+AGENT_ID = os.getenv('BEDROCK_AGENT_ID')
 
 class BedrockChatApp:
     def __init__(self):
-        # Initialize application state
         self.initialize_state()
         self.configure_page()
+        self._validate_aws_config()
+
+    def _validate_aws_config(self):
+        """Validate AWS configuration and credentials"""
+        if not AGENT_ALIAS_ID or not AGENT_ID:
+            raise ValueError("Missing required AWS Bedrock configuration")
+        
+        try:
+            self.bedrock_client = boto3.client('bedrock-agent-runtime', region_name=REGION_NAME)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize AWS Bedrock client: {str(e)}")
 
     def initialize_state(self):
         """Initialize all session state variables"""
-        if "user_id" not in st.session_state:
-            st.session_state.user_id = str(uuid.uuid4())
-
-        if "conversation_history" not in st.session_state:
-            st.session_state.conversation_history = {}
-
-        # if "current_user" not in st.session_state:
-        #     st.session_state.current_user = None
-
-        if "is_authenticated" not in st.session_state:
-            st.session_state.is_authenticated = False
-
-        if "is_processing" not in st.session_state:
-            st.session_state.is_processing = False
-
-        if "user_database" not in st.session_state:
-            st.session_state.user_database = {}
-
-        if "response_queue" not in st.session_state:
-            st.session_state.response_queue = queue.Queue()
-
-        if "waiting_for_response" not in st.session_state:
-            st.session_state.waiting_for_response = False
-
-        if "session_id" not in st.session_state:
-            st.session_state.session_id = str(uuid.uuid4())
+        state_vars = {
+            "user_id": str(uuid.uuid4()),
+            "conversation_history": {},
+            "is_authenticated": False,
+            "is_processing": False,
+            "user_database": {},
+            "response_queue": queue.Queue(maxsize=MAX_QUEUE_SIZE),
+            "waiting_for_response": False,
+            "session_id": str(uuid.uuid4())
+        }
+        
+        for var, value in state_vars.items():
+            if var not in st.session_state:
+                st.session_state[var] = value
 
     def configure_page(self):
         """Configure Streamlit page settings"""
@@ -55,14 +60,22 @@ class BedrockChatApp:
             layout="wide"
         )
 
-    def invoke_bedrock_model_with_streaming(self, prompt, user_id, session_id):
+    def validate_prompt(self, prompt: str) -> bool:
+        """Validate user input prompt"""
+        if not prompt or len(prompt) > MAX_PROMPT_LENGTH:
+            return False
+        # Add additional validation rules as needed
+        return True
+
+    def invoke_bedrock_model_with_streaming(self, prompt: str, user_id: str, session_id: str) -> Optional[str]:
         """Invoke AWS Bedrock model with streaming response"""
-        bedrock_client = boto3.client('bedrock-agent-runtime', region_name='us-east-1')
+        if not self.validate_prompt(prompt):
+            raise ValueError("Invalid prompt")
 
         try:
-            response = bedrock_client.invoke_agent(
-                agentAliasId='NW6OFIOLFM',
-                agentId='UHPMS1A2QV',
+            response = self.bedrock_client.invoke_agent(
+                agentAliasId=AGENT_ALIAS_ID,
+                agentId=AGENT_ID,
                 enableTrace=False,
                 endSession=False,
                 inputText=prompt,
@@ -80,9 +93,8 @@ class BedrockChatApp:
 
                     if text_chunk:
                         full_response += text_chunk
-                        st.session_state.response_queue.put((user_id, text_chunk, False))
-                    # else:
-                    #     st.session_state.response_queue.put((user_id, 'waiting for response', False))
+                        with threading.Lock():
+                            st.session_state.response_queue.put((user_id, text_chunk, False))
 
             return full_response
 
@@ -91,39 +103,41 @@ class BedrockChatApp:
             st.session_state.response_queue.put((user_id, error_msg, True))
             return None
 
-    def process_request(self, prompt, user_id, session_id):
+    def process_request(self, prompt: str, user_id: str, session_id: str):
         """Process the user request and get a response from AWS Bedrock"""
         try:
-            if user_id not in st.session_state.conversation_history:
-                st.session_state.conversation_history[user_id] = []
+            with threading.Lock():
+                if user_id not in st.session_state.conversation_history:
+                    st.session_state.conversation_history[user_id] = []
 
-            st.session_state.conversation_history[user_id].append({"role": "user", "content": prompt})
-            st.session_state.waiting_for_response = True
-
-            full_response = self.invoke_bedrock_model_with_streaming(prompt, user_id, session_id)
-            st.write(full_response)
-
-            if full_response:
                 st.session_state.conversation_history[user_id].append({
-                    "role": "assistant",
-                    "content": full_response,
+                    "role": "user", 
+                    "content": prompt,
                     "timestamp": datetime.now().isoformat()
                 })
-                st.session_state.waiting_for_response = False
+                st.session_state.waiting_for_response = True
 
+            full_response = self.invoke_bedrock_model_with_streaming(prompt, user_id, session_id)
+            
+            if full_response:
+                with threading.Lock():
+                    st.session_state.conversation_history[user_id].append({
+                        "role": "assistant",
+                        "content": full_response,
+                        "timestamp": datetime.now().isoformat()
+                    })
 
         except Exception as e:
             st.error(f"Error processing request: {str(e)}")
         finally:
-            # Reset processing flag
-            st.session_state.is_processing = False
-            st.session_state.waiting_for_response = False
+            with threading.Lock():
+                st.session_state.is_processing = False
+                st.session_state.waiting_for_response = False
 
     def chat_interface(self):
         """Display chat interface"""
         st.title("AWS Bedrock Chat")
 
-        # Sidebar for settings
         with st.sidebar:
             st.subheader("Settings")
             agent_name = st.selectbox(
@@ -136,7 +150,6 @@ class BedrockChatApp:
                     "cohere.command-text-v14:0"
                 ]
             )
-
             st.divider()
 
         chat_container = st.container()
@@ -145,44 +158,30 @@ class BedrockChatApp:
                 for message in st.session_state.conversation_history[st.session_state.user_id]:
                     role = message["role"]
                     content = message["content"]
+                    st.chat_message(role).write(content)
 
-                    if role == "user":
-                        st.chat_message("user").write(content)
-                    else:
-                        st.chat_message("assistant").write(content)
-
-        # Process any queued responses
-        print(st.session_state.waiting_for_response, st.session_state.is_processing)
         while st.session_state.waiting_for_response:
-            if not st.session_state.response_queue.empty():
-                try:
-                    # Process all available responses
-                    while not st.session_state.response_queue.empty():
-                        user_id, text_chunk, is_error = st.session_state.response_queue.get(block=False)
-
-                        if is_error:
-                            st.error(text_chunk)
-                        else:
-                            st.rerun()
-
-                except queue.Empty:
-                    print("Queue is empty")
-                    pass
+            try:
+                while not st.session_state.response_queue.empty():
+                    user_id, text_chunk, is_error = st.session_state.response_queue.get(timeout=0.1)
+                    if is_error:
+                        st.error(text_chunk)
+                    else:
+                        st.rerun()
+            except queue.Empty:
+                continue
 
         user_prompt = st.chat_input("Enter your prompt here", disabled=st.session_state.is_processing)
 
         if user_prompt:
-            # Display user message
             st.chat_message("user").write(user_prompt)
             st.session_state.is_processing = True
 
             with st.chat_message("assistant"):
                 with st.status("Generating response...", expanded=True) as status:
-                    st.write("Please wait while AWS Bedrock processes your request. Response may take a few minutes depending upon the number of files.")
+                    st.write("Please wait while AWS Bedrock processes your request...")
                     st.session_state.waiting_for_response = True
 
-                    time.sleep(1)
-                    # Start new thread to process request
                     thread = threading.Thread(
                         target=lambda: self.process_request(
                             user_prompt,
@@ -194,7 +193,6 @@ class BedrockChatApp:
                     thread.daemon = True
                     thread.start()
 
-                    time.sleep(0.1)  # Small delay for thread to start
                     while thread.is_alive():
                         time.sleep(0.1)
                         if not st.session_state.waiting_for_response:
@@ -204,13 +202,9 @@ class BedrockChatApp:
 
             st.rerun()
 
-
-
-
     def run(self):
         """Main application flow"""
         self.chat_interface()
-
 
 if __name__ == "__main__":
     app = BedrockChatApp()
