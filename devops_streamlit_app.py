@@ -1,9 +1,14 @@
 import json
+import os.path
 import queue
 import threading
 import time
 import uuid
 from datetime import datetime
+from botocore.config import Config
+import yaml
+
+boto3_config = Config(read_timeout=1000)
 
 import boto3
 import streamlit as st
@@ -17,6 +22,15 @@ class BedrockChatApp:
         # Initialize application state
         self.initialize_state()
         self.configure_page()
+        self.config = self.load_config()
+
+
+    def load_config(self):
+        """Load configuration from YAML file"""
+        directory_name = os.path.dirname(__file__)
+        with open(os.path.join(directory_name, 'config', 'sidebar.yaml'), 'r') as file:
+            config = yaml.safe_load(file)
+        return config
 
     def initialize_state(self):
         """Initialize all session state variables"""
@@ -25,9 +39,6 @@ class BedrockChatApp:
 
         if "conversation_history" not in st.session_state:
             st.session_state.conversation_history = {}
-
-        # if "current_user" not in st.session_state:
-        #     st.session_state.current_user = None
 
         if "is_authenticated" not in st.session_state:
             st.session_state.is_authenticated = False
@@ -55,14 +66,14 @@ class BedrockChatApp:
             layout="wide"
         )
 
-    def invoke_bedrock_model_with_streaming(self, prompt, user_id, session_id):
+    def invoke_bedrock_model_with_streaming(self, prompt, user_id, session_id, agent_name):
         """Invoke AWS Bedrock model with streaming response"""
-        bedrock_client = boto3.client('bedrock-agent-runtime', region_name='us-east-1')
+        bedrock_client = boto3.client('bedrock-agent-runtime', region_name='us-east-1', config=boto3_config)
 
         try:
             response = bedrock_client.invoke_agent(
-                agentAliasId='NW6OFIOLFM',
-                agentId='UHPMS1A2QV',
+                agentAliasId=self.config[agent_name]['agent_alias_id'],
+                agentId=self.config[agent_name]['agent_id'],
                 enableTrace=False,
                 endSession=False,
                 inputText=prompt,
@@ -81,17 +92,16 @@ class BedrockChatApp:
                     if text_chunk:
                         full_response += text_chunk
                         st.session_state.response_queue.put((user_id, text_chunk, False))
-                    # else:
-                    #     st.session_state.response_queue.put((user_id, 'waiting for response', False))
 
             return full_response
 
         except Exception as e:
             error_msg = f"Error: {str(e)}"
+            print("Error Message: " + error_msg)
             st.session_state.response_queue.put((user_id, error_msg, True))
             return None
 
-    def process_request(self, prompt, user_id, session_id):
+    def process_request(self, prompt, user_id, session_id, agent_name):
         """Process the user request and get a response from AWS Bedrock"""
         try:
             if user_id not in st.session_state.conversation_history:
@@ -100,8 +110,9 @@ class BedrockChatApp:
             st.session_state.conversation_history[user_id].append({"role": "user", "content": prompt})
             st.session_state.waiting_for_response = True
 
-            full_response = self.invoke_bedrock_model_with_streaming(prompt, user_id, session_id)
-            st.write(full_response)
+            full_response = self.invoke_bedrock_model_with_streaming(prompt, user_id, session_id, agent_name)
+            st.write('Full Response ' + str(full_response))
+            print('Full Response ' + str(full_response))
 
             if full_response:
                 st.session_state.conversation_history[user_id].append({
@@ -121,23 +132,25 @@ class BedrockChatApp:
 
     def chat_interface(self):
         """Display chat interface"""
-        st.title("AWS Bedrock Chat")
 
         # Sidebar for settings
         with st.sidebar:
             st.subheader("Settings")
             agent_name = st.selectbox(
-                "Select Bedrock Model",
-                [
-                    "anthropic.claude-3-sonnet-20240229-v1:0",
-                    "anthropic.claude-3-haiku-20240307-v1:0",
-                    "amazon.titan-text-express-v1",
-                    "ai21.j2-ultra-v1",
-                    "cohere.command-text-v14:0"
-                ]
+                "Select Bedrock Agent",
+                options=[agent for agent in self.config.keys()]
             )
 
             st.divider()
+
+            st.text_area(
+                "Instructions",
+                value=self.config[agent_name]['instructions'],
+                height=400,
+                disabled=True
+            )
+
+        st.title(self.config[agent_name]['name'])
 
         chat_container = st.container()
         with chat_container:
@@ -152,7 +165,6 @@ class BedrockChatApp:
                         st.chat_message("assistant").write(content)
 
         # Process any queued responses
-        print(st.session_state.waiting_for_response, st.session_state.is_processing)
         while st.session_state.waiting_for_response:
             if not st.session_state.response_queue.empty():
                 try:
@@ -187,7 +199,8 @@ class BedrockChatApp:
                         target=lambda: self.process_request(
                             user_prompt,
                             st.session_state.user_id,
-                            st.session_state.session_id
+                            st.session_state.session_id,
+                            agent_name
                         )
                     )
                     add_script_run_ctx(thread)
