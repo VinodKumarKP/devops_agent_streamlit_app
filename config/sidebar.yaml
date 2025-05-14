@@ -4,6 +4,6 @@ devops-code-remediation-agent-dev:
     Provide the giturl and branch of the repository to be scanned. This agent will scan the repository and provide the results.
     
     Sample prompt:    
-    Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues.
+    Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues..
   agent_id: UHPMS1A2QV
   agent_alias_id: NW6OFIOLFM
