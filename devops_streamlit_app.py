@@ -97,7 +97,7 @@ class BedrockChatApp:
 
         except Exception as e:
             error_msg = f"Error: {str(e)}"
-            print("Error Message: " + error_msg)
+            st.error(error_msg)
             st.session_state.response_queue.put((user_id, error_msg, True))
             return None
 
@@ -165,7 +165,7 @@ class BedrockChatApp:
                         st.chat_message("assistant").write(content)
 
         # Process any queued responses
-        while st.session_state.waiting_for_response:
+        while st.session_state.waiting_for_response or not st.session_state.response_queue.empty():
             if not st.session_state.response_queue.empty():
                 try:
                     # Process all available responses
