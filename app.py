@@ -1,0 +1,148 @@
+import threading
+import time
+from datetime import datetime
+
+import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx
+
+from modules.aws_client_manager import AWSClientManager
+from modules.bedrock_agent_manager import BedrockAgentManager
+from modules.config_manager import ConfigManager
+from modules.session_manager import SessionManager
+from modules.streamlit_ui_manager import StreamlitUIManager
+
+
+class BedrockChatApp:
+    """
+    Main application class for the AWS Bedrock Chat application.
+    """
+
+    def __init__(self):
+        """Initialize the chat application components."""
+        # Initialize managers
+        self.session_manager = SessionManager()
+        self.ui_manager = StreamlitUIManager()
+        self.config_manager = ConfigManager()
+        self.aws_clients = AWSClientManager()
+        self.agent_manager = BedrockAgentManager(self.aws_clients)
+
+        # Set up application state
+        self.session_manager.initialize_state()
+        self.ui_manager.configure_page()
+
+    def process_request(self, prompt: str, user_id: str, session_id: str, agent_name: str):
+        """
+        Process the user request and get a response from AWS Bedrock.
+
+        Args:
+            prompt: User input prompt
+            user_id: Unique user identifier
+            session_id: Current session identifier
+            agent_name: Name of the agent to invoke
+        """
+        try:
+            # Initialize conversation history for this user if needed
+            if user_id not in st.session_state.conversation_history:
+                st.session_state.conversation_history[user_id] = []
+
+            # Add user message to history
+            st.session_state.conversation_history[user_id].append({
+                "role": "user",
+                "content": prompt
+            })
+
+            st.session_state.waiting_for_response = True
+
+            # Get response from Bedrock
+            full_response = self.agent_manager.invoke_agent(
+                prompt,
+                user_id,
+                session_id,
+                agent_name
+            )
+
+            # Log the full response
+            if full_response:
+                st.session_state.conversation_history[user_id].append({
+                    "role": "assistant",
+                    "content": full_response,
+                    "timestamp": datetime.now().isoformat()
+                })
+                st.session_state.waiting_for_response = False
+
+        except Exception as e:
+            st.error(f"Error processing request: {str(e)}")
+
+        finally:
+            # Reset processing flags
+            st.session_state.is_processing = False
+            st.session_state.waiting_for_response = False
+
+    def chat_interface(self):
+        """Display and manage the chat interface."""
+        # Render sidebar and get selected agent
+        agent_name = self.ui_manager.render_sidebar(self.config_manager.config)
+
+        # Set app title
+        st.title(self.config_manager.config[agent_name]['name'])
+
+        # Display chat container with history
+        chat_container = st.container()
+        with chat_container:
+            self.ui_manager.render_chat_history(
+                st.session_state.user_id,
+                st.session_state.conversation_history
+            )
+
+        # Process any streaming responses in queue
+        self.ui_manager.process_response_queue()
+
+        # Handle user input
+        user_prompt = st.chat_input(
+            "Enter your prompt here",
+            disabled=st.session_state.is_processing
+        )
+
+        if user_prompt:
+            # Display user message
+            st.chat_message("user").write(user_prompt)
+            st.session_state.is_processing = True
+
+            with st.chat_message("assistant"):
+                with st.status("Generating response...", expanded=True) as status:
+                    st.write("Please wait while AWS Bedrock processes your request. "
+                             "Response may take a few minutes depending upon the number of files.")
+                    st.session_state.waiting_for_response = True
+
+                    # Start new thread to process request
+                    thread = threading.Thread(
+                        target=lambda: self.process_request(
+                            user_prompt,
+                            st.session_state.user_id,
+                            st.session_state.session_id,
+                            agent_name
+                        )
+                    )
+                    add_script_run_ctx(thread)
+                    thread.daemon = True
+                    thread.start()
+
+                    # Wait for thread to complete
+                    time.sleep(0.1)  # Small delay for thread to start
+                    while thread.is_alive():
+                        time.sleep(0.1)
+                        if not st.session_state.waiting_for_response:
+                            break
+
+                    status.update(label="Response received!", state="complete", expanded=False)
+
+            st.rerun()
+
+    def run(self):
+        """Run the main application flow."""
+        self.chat_interface()
+
+
+if __name__ == "__main__":
+    app = BedrockChatApp()
+    app.run()
