@@ -5,5 +5,4 @@ devops-code-remediation-agent-dev:
     
     Sample prompt:    
     Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues..
-  agent_id: UHPMS1A2QV
-  agent_alias_id: NW6OFIOLFM
+
