@@ -1,4 +1,3 @@
-
 """
 AWS Bedrock Chat Application
 
@@ -116,14 +115,12 @@ class BedrockChatApp:
             disabled=st.session_state.is_processing
         )
 
-
-
         if user_prompt:
             # Display user message
             st.chat_message("user", avatar=Constants.USER_AVATAR).write(user_prompt)
             st.session_state.is_processing = True
 
-            with st.chat_message("assistant", avatar = Constants.ASSISTANT_AVATAR):
+            with st.chat_message("assistant", avatar=Constants.ASSISTANT_AVATAR):
                 with st.status("Generating response...", expanded=True) as status:
                     st.write("Please wait while AWS Bedrock processes your request. "
                              "Response may take a few minutes depending upon the number of files.")
