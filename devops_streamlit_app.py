@@ -1,20 +1,19 @@
-import json
+import os.path
 import os.path
 import queue
 import threading
 import time
 import uuid
 from datetime import datetime
-from botocore.config import Config
+
 import yaml
+from botocore.config import Config
 
 boto3_config = Config(read_timeout=1000)
 
 import boto3
 import streamlit as st
-from streamlit.runtime.scriptrunner import get_script_run_ctx, add_script_run_ctx
-
-from time import sleep
+from streamlit.runtime.scriptrunner import add_script_run_ctx
 
 
 class BedrockChatApp:
@@ -23,7 +22,8 @@ class BedrockChatApp:
         self.initialize_state()
         self.configure_page()
         self.config = self.load_config()
-
+        self.bedrock_client = boto3.client('bedrock-agent-runtime', os.environ['AWS_REGION'], config=boto3_config)
+        self.bedrock_agent_client = boto3.client('bedrock-agent', os.environ['AWS_REGION'], config=boto3_config)
 
     def load_config(self):
         """Load configuration from YAML file"""
@@ -66,14 +66,42 @@ class BedrockChatApp:
             layout="wide"
         )
 
+    def get_agent_id(self, agent_name):
+        response = self.bedrock_agent_client.list_agents()
+        print(response)
+
+        agentId = None
+        if 'agentSummaries' in response:
+            for agent in response['agentSummaries']:
+                if 'devops-code-remediation-agent-dev' in agent['agentName']:
+                    agentId = agent['agentId']
+
+        if agentId is None:
+            raise ValueError(f"Agent {agent_name} not found")
+        return agentId
+
+    def get_agent_alias_id(self, agent_name, agent_id):
+        response = self.bedrock_agent_client.list_agent_aliases(agentId=agent_id)
+
+        alias_id = None
+        if 'agentAliasSummaries' in response:
+            for alias in response['agentAliasSummaries']:
+                if 'latest' in alias['agentAliasName']:
+                    alias_id = alias['agentAliasId']
+
+        if alias_id is None:
+            raise ValueError(f"Alias for agent {agent_name} not found")
+        return alias_id
+
     def invoke_bedrock_model_with_streaming(self, prompt, user_id, session_id, agent_name):
         """Invoke AWS Bedrock model with streaming response"""
-        bedrock_client = boto3.client('bedrock-agent-runtime', region_name='us-east-1', config=boto3_config)
 
+        agent_id = self.get_agent_id(agent_name)
+        alias_agent_id = self.get_agent_alias_id(agent_id=agent_id, agent_name=agent_name)
         try:
-            response = bedrock_client.invoke_agent(
-                agentAliasId=self.config[agent_name]['agent_alias_id'],
-                agentId=self.config[agent_name]['agent_id'],
+            response = self.bedrock_client.invoke_agent(
+                agentAliasId=alias_agent_id,
+                agentId=agent_id,
                 enableTrace=False,
                 endSession=False,
                 inputText=prompt,
