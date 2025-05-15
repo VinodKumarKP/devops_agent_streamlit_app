@@ -95,10 +95,10 @@ class BedrockChatApp:
 
     def invoke_bedrock_model_with_streaming(self, prompt, user_id, session_id, agent_name):
         """Invoke AWS Bedrock model with streaming response"""
-
-        agent_id = self.get_agent_id(agent_name)
-        alias_agent_id = self.get_agent_alias_id(agent_id=agent_id, agent_name=agent_name)
         try:
+            agent_id = self.get_agent_id(agent_name)
+            alias_agent_id = self.get_agent_alias_id(agent_id=agent_id, agent_name=agent_name)
+
             response = self.bedrock_client.invoke_agent(
                 agentAliasId=alias_agent_id,
                 agentId=agent_id,
