@@ -1,3 +1,15 @@
+
+"""
+AWS Bedrock Chat Application
+
+This module provides a Streamlit-based chat interface for interacting with AWS Bedrock agents.
+It handles user authentication, chat history management, and streaming responses from
+AWS Bedrock models.
+
+Author: Vinod Kumar KP
+Date: May 14, 2025
+"""
+
 import threading
 import time
 from datetime import datetime
