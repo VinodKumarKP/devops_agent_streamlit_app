@@ -1,6 +1,14 @@
 [theme]
-primaryColor="#0072C6"
-backgroundColor="#F0F2F6"
-secondaryBackgroundColor="#D3E5FF"
-textColor="#000000"
-font="sans serif"
+# Primary colors
+primaryColor = "#6C63FF"        # Vibrant purple for primary actions
+backgroundColor = "#1E1E2E"     # Dark background for reduced eye strain
+secondaryBackgroundColor = "#292A3E"  # Slightly lighter background for secondary elements
+textColor = "#E0E0E0"           # Light gray text for contrast
+font = "sans serif"             # Clean, modern sans-serif font
+
+# Additional custom colors
+[theme.colors]
+accentColor = "#00D4FF"         # Bright cyan for accents
+successColor = "#00CC99"        # Teal for success messages
+warningColor = "#FFD166"        # Yellow for warnings
+errorColor = "#FF6B6B"          # Coral red for errors

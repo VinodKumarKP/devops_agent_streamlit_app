@@ -20,6 +20,7 @@ from streamlit.runtime.scriptrunner import add_script_run_ctx
 from modules.aws_client_manager import AWSClientManager
 from modules.bedrock_agent_manager import BedrockAgentManager
 from modules.config_manager import ConfigManager
+from modules.constants import Constants
 from modules.session_manager import SessionManager
 from modules.streamlit_ui_manager import StreamlitUIManager
 
@@ -96,7 +97,7 @@ class BedrockChatApp:
         agent_name = self.ui_manager.render_sidebar(self.config_manager.config)
 
         # Set app title
-        st.title(self.config_manager.config[agent_name]['name'])
+        self.ui_manager.display_header(self.config_manager.config[agent_name]['name'])
 
         # Display chat container with history
         chat_container = st.container()
@@ -115,12 +116,14 @@ class BedrockChatApp:
             disabled=st.session_state.is_processing
         )
 
+
+
         if user_prompt:
             # Display user message
-            st.chat_message("user").write(user_prompt)
+            st.chat_message("user", avatar=Constants.USER_AVATAR).write(user_prompt)
             st.session_state.is_processing = True
 
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar = Constants.ASSISTANT_AVATAR):
                 with st.status("Generating response...", expanded=True) as status:
                     st.write("Please wait while AWS Bedrock processes your request. "
                              "Response may take a few minutes depending upon the number of files.")

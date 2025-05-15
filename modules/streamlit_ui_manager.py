@@ -1,7 +1,10 @@
+import os
 import queue
 from typing import Dict
 
 import streamlit as st
+
+from modules.constants import Constants
 
 
 class StreamlitUIManager:
@@ -16,6 +19,14 @@ class StreamlitUIManager:
             page_icon="🤖",
             layout="wide"
         )
+        self.load_css()
+
+    def display_header(self, title):
+        st.markdown(f"""
+        <div class="main-header">
+            <h3>{title}</h3>
+        </div>
+        """, unsafe_allow_html=True)
 
     def render_sidebar(self, config: Dict) -> str:
         """
@@ -59,9 +70,9 @@ class StreamlitUIManager:
                 content = message["content"]
 
                 if role == "user":
-                    st.chat_message("user").write(content)
+                    st.chat_message("user", avatar=Constants.USER_AVATAR).write(content)
                 else:
-                    st.chat_message("assistant").write(content)
+                    st.chat_message("assistant", avatar = Constants.ASSISTANT_AVATAR).write(content)
 
     def process_response_queue(self):
         """Process any queued streaming responses."""
@@ -80,3 +91,13 @@ class StreamlitUIManager:
 
                 except queue.Empty:
                     pass
+
+
+    def load_css(self):
+        """Load CSS styles for the application."""
+
+        directory_name = os.path.dirname(__file__)
+        config_path = os.path.join(os.path.dirname(directory_name), 'style.css')
+
+        with open(config_path) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
