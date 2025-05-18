@@ -1,4 +1,4 @@
-devops-code-remediation-agent-dev:
+devops-code-remediation-agent:
   name: DevOps Code Remediation Agent
   instructions: |
     Provide the giturl and branch of the repository to be scanned. This agent will scan the repository and provide the results.

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 
 import streamlit as st
 
@@ -20,6 +20,16 @@ class BedrockAgentManager:
         self.bedrock_client = aws_clients.bedrock_client
         self.bedrock_agent_client = aws_clients.bedrock_agent_client
 
+    def get_agent_list(self):
+        """
+        Retrieve a list of available agents.
+
+        Returns:
+            list: List of agent dictionaries
+        """
+        response = self.bedrock_agent_client.list_agents()
+        return [ agent['agentName'] for agent in response['agentSummaries']]
+
     def get_agent_id(self, agent_name: str) -> str:
         """
         Retrieve the agent ID for a given agent name.
@@ -38,7 +48,7 @@ class BedrockAgentManager:
         agent_id = None
         if 'agentSummaries' in response:
             for agent in response['agentSummaries']:
-                if 'devops-code-remediation-agent-dev' in agent['agentName']:
+                if agent_name in agent['agentName']:
                     agent_id = agent['agentId']
                     break
 

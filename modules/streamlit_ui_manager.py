@@ -4,6 +4,7 @@ from typing import Dict
 
 import streamlit as st
 
+from modules.bedrock_agent_manager import BedrockAgentManager
 from modules.constants import Constants
 
 
@@ -11,6 +12,10 @@ class StreamlitUIManager:
     """
     Manages the Streamlit user interface components.
     """
+
+    def __init__(self, bedrock_agent_manager: BedrockAgentManager):
+        self.bedrock_agent_manager = bedrock_agent_manager
+
 
     def configure_page(self):
         """Configure Streamlit page settings."""
@@ -22,13 +27,37 @@ class StreamlitUIManager:
         self.load_css()
 
     def display_header(self, title):
+        hide_streamlit_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        </style>
+
+        """
+        st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+        st.set_option("client.toolbarMode", "viewer")
+
         st.markdown(f"""
         <div class="main-header">
             <h3>{title}</h3>
         </div>
         """, unsafe_allow_html=True)
 
-    def render_sidebar(self, config: Dict) -> str:
+        st.markdown("""
+        <style>
+        header.stAppHeader {
+            background-color: transparent;
+        }
+        section.stMain .block-container {
+            margin: 0rem;
+            padding-top: 0rem;
+            padding-bottom: 0rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        </style>""", unsafe_allow_html=True)
+
+    def render_sidebar(self, config: Dict) -> tuple[str, str]:
         """
         Render the sidebar with settings and instructions.
 
@@ -40,21 +69,30 @@ class StreamlitUIManager:
         """
         with st.sidebar:
             st.subheader("Settings")
+            agent_list = self.bedrock_agent_manager.get_agent_list()
+            option_list = {values['name']:f"{key}:{agent}"
+                           for agent in agent_list for key,values in config.items() if key in agent}
+
             agent_name = st.selectbox(
                 "Select Bedrock Agent",
-                options=[agent for agent in config.keys()]
+                options=[
+                        option for option in option_list.keys()
+                ]
             )
+
+            agent_key = option_list[agent_name].split(":")[0]
+            agent_name = option_list[agent_name].split(":")[1]
 
             st.divider()
 
             st.text_area(
                 "Instructions",
-                value=config[agent_name]['instructions'],
+                value=config[agent_key]['instructions'],
                 height=400,
                 disabled=True
             )
 
-        return agent_name
+        return agent_name,agent_key
 
     def render_chat_history(self, user_id: str, conversation_history: Dict):
         """

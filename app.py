@@ -32,11 +32,11 @@ class BedrockChatApp:
     def __init__(self):
         """Initialize the chat application components."""
         # Initialize managers
-        self.session_manager = SessionManager()
-        self.ui_manager = StreamlitUIManager()
         self.config_manager = ConfigManager()
+        self.session_manager = SessionManager()
         self.aws_clients = AWSClientManager()
         self.agent_manager = BedrockAgentManager(self.aws_clients)
+        self.ui_manager = StreamlitUIManager(self.agent_manager)
 
         # Set up application state
         self.session_manager.initialize_state()
@@ -93,10 +93,10 @@ class BedrockChatApp:
     def chat_interface(self):
         """Display and manage the chat interface."""
         # Render sidebar and get selected agent
-        agent_name = self.ui_manager.render_sidebar(self.config_manager.config)
+        agent_name,agent_key = self.ui_manager.render_sidebar(self.config_manager.config)
 
         # Set app title
-        self.ui_manager.display_header(self.config_manager.config[agent_name]['name'])
+        self.ui_manager.display_header(self.config_manager.config[agent_key]['name'])
 
         # Display chat container with history
         chat_container = st.container()
