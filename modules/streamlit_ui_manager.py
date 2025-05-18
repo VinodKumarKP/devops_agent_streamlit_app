@@ -85,12 +85,13 @@ class StreamlitUIManager:
 
             st.divider()
 
-            st.text_area(
-                "Instructions",
-                value=config[agent_key]['instructions'],
-                height=400,
-                disabled=True
-            )
+            # st.text_area(
+            #     "Instructions",
+            #     value=config[agent_key]['instructions'],
+            #     height=400,
+            #     disabled=True
+            # )
+            st.markdown(config[agent_key]['instructions'], unsafe_allow_html=True)
 
         return agent_name,agent_key
 

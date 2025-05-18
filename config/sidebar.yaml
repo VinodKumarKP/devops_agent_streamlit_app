@@ -1,8 +1,14 @@
 devops-code-remediation-agent:
   name: DevOps Code Remediation Agent
   instructions: |
+    ## Instructions
     Provide the giturl and branch of the repository to be scanned. This agent will scan the repository and provide the results.
     
-    Sample prompt:    
-    Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues..
-
+    ## Sample Prompt
+    - Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues.
+      - Example: "Help me analyze the git url https://github.com/example/project.git and branch main of the repository project-name for any code issues."
+    - Provide me coding best practice in <<programming language>>
+      - Example: "Provide me coding best practice in Python."
+      - Example: "Provide me coding best practice in JavaScript."
+    - Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues and provide me remediated code.
+      - Example: "Help me analyze the git url https://github.com/example/webapp.git and branch development of the repository webapp for any code issues and provide me remediated code."
