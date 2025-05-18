@@ -12,3 +12,24 @@ devops-code-remediation-agent:
       - Example: "Provide me coding best practice in JavaScript."
     - Help me analyze the git url <<giturl>> and branch <<branch>> of the repository <<repository_name>> for any code issues and provide me remediated code.
       - Example: "Help me analyze the git url https://github.com/example/webapp.git and branch development of the repository webapp for any code issues and provide me remediated code."
+devops-test-case-generator-agent:
+  name: Test Case Generator Agent
+  instructions: |
+    ## Instructions
+    Provide the git URL and branch of the repository to generate unit tests. This agent will analyze the repository code and generate appropriate test cases for your files.
+
+    ## Sample Prompts
+    - Generate unit tests for my repository at <<git_url>> using branch <<branch_name>>
+      - Example: "Generate unit tests for my repository at https://github.com/example/project.git using branch main"
+
+    - Create tests for <<git_url>> with high test coverage
+      - Example: "Create tests for https://github.com/myusername/api-service.git with high test coverage"
+    
+    - What are good testing practices for <<programming_language>>?
+      - Example: "What are good testing practices for Python?"
+      - Example: "What are good testing practices for JavaScript?"
+
+    - How can I write effective unit tests for my <<framework_name>> application?
+      - Example: "How can I write effective unit tests for my React application?"
+      - Example: "How can I write effective unit tests for my Django application?"
+
