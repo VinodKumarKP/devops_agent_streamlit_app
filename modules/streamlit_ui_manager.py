@@ -57,7 +57,7 @@ class StreamlitUIManager:
         }
         </style>""", unsafe_allow_html=True)
 
-    def render_sidebar(self, config: Dict) -> tuple[str, str]:
+    def render_sidebar(self, config: Dict) -> tuple[str, str, str]:
         """
         Render the sidebar with settings and instructions.
 
@@ -70,8 +70,12 @@ class StreamlitUIManager:
         with st.sidebar:
             st.subheader("Settings")
             agent_list = self.bedrock_agent_manager.get_agent_list()
-            option_list = {values['name']:f"{key}:{agent}"
-                           for agent in agent_list for key,values in config.items() if key in agent}
+            option_list = {}
+            option_list.update(
+                {values['name']: f"{key}:{values['name']}:{values['type']}" for key, values in config.items() if
+                 values['type'] == 'mcp'})
+            option_list.update({values['name']:f"{key}:{agent}:{values['type']}"
+                           for agent in agent_list for key,values in config.items() if key in agent})
 
             agent_name = st.selectbox(
                 "Select Bedrock Agent",
@@ -81,7 +85,9 @@ class StreamlitUIManager:
             )
 
             agent_key = option_list[agent_name].split(":")[0]
+            agent_type = option_list[agent_name].split(":")[2]
             agent_name = option_list[agent_name].split(":")[1]
+
 
             st.divider()
 
@@ -93,7 +99,7 @@ class StreamlitUIManager:
             # )
             st.markdown(config[agent_key]['instructions'], unsafe_allow_html=True)
 
-        return agent_name,agent_key
+        return agent_name,agent_key, agent_type
 
     def render_chat_history(self, user_id: str, conversation_history: Dict):
         """

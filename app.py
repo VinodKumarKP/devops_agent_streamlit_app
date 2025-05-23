@@ -8,7 +8,7 @@ AWS Bedrock models.
 Author: Vinod Kumar KP
 Date: May 14, 2025
 """
-
+import asyncio
 import threading
 import time
 from datetime import datetime
@@ -42,7 +42,13 @@ class BedrockChatApp:
         self.session_manager.initialize_state()
         self.ui_manager.configure_page()
 
-    def process_request(self, prompt: str, user_id: str, session_id: str, agent_name: str):
+    def process_request(self,
+                        prompt: str,
+                        user_id: str,
+                        session_id: str,
+                        agent_name: str,
+                        agent_type: str,
+                        agent_config: dict = None):
         """
         Process the user request and get a response from AWS Bedrock.
 
@@ -51,6 +57,8 @@ class BedrockChatApp:
             user_id: Unique user identifier
             session_id: Current session identifier
             agent_name: Name of the agent to invoke
+            agent_type: Type of the agent (e.g., 'mcp', 'llm')
+            agent_config: Optional configuration for the agent
         """
         try:
             # Initialize conversation history for this user if needed
@@ -70,7 +78,9 @@ class BedrockChatApp:
                 prompt,
                 user_id,
                 session_id,
-                agent_name
+                agent_name,
+                agent_type,
+                agent_config
             )
 
             # Log the full response
@@ -93,7 +103,7 @@ class BedrockChatApp:
     def chat_interface(self):
         """Display and manage the chat interface."""
         # Render sidebar and get selected agent
-        agent_name,agent_key = self.ui_manager.render_sidebar(self.config_manager.config)
+        agent_name,agent_key, agent_type = self.ui_manager.render_sidebar(self.config_manager.config)
 
         # Set app title
         self.ui_manager.display_header(self.config_manager.config[agent_key]['name'])
@@ -132,7 +142,9 @@ class BedrockChatApp:
                             user_prompt,
                             st.session_state.user_id,
                             st.session_state.session_id,
-                            agent_name
+                            agent_name,
+                            agent_type,
+                            self.config_manager.config[agent_key]
                         )
                     )
                     add_script_run_ctx(thread)
@@ -150,11 +162,11 @@ class BedrockChatApp:
 
             st.rerun()
 
-    def run(self):
+    async def run(self):
         """Run the main application flow."""
         self.chat_interface()
 
 
 if __name__ == "__main__":
     app = BedrockChatApp()
-    app.run()
+    asyncio.run(app.run())

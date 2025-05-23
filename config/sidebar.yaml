@@ -1,5 +1,26 @@
+deployment-release-manager-agent:
+  name: Deployment Release Manager Agent
+  type: mcp
+  instructions: |
+    ## Instructions
+    Analyze the code scan result of the provided project and summarize the results. Based on that analysis, provide a list of recommended actions 
+    and also indicate whether the project is ready for deployment or not.
+
+    ## Sample Prompts
+    - What are the recommendations for <<project_name>>?
+      - Example: "What are the recommendations for my project?"
+    - What are the recommendations for <<project_name>> with high test coverage?
+      - Example: "What are the recommendations for my project with high test coverage?"
+    - What are the recommendations for <<project_name>> with high test coverage and high code quality?
+      - Example: "What are the recommendations for my project with high test coverage and high code quality?"
+  command: python
+  server_script: [ "mcp_servers/scan_results.py" ]
+  system_prompt: |
+    You are a helpful assistant with access to code scan result tool. Analyze the code scan result of the provided project and summarize the results. Based on that analysis, provide a list of recommended actions 
+    and also indicate whether the project is ready for deployment or not.
 devops-code-remediation-agent:
   name: DevOps Code Remediation Agent
+  type: bedrock
   instructions: |
     ## Instructions
     Provide the giturl and branch of the repository to be scanned. This agent will scan the repository and provide the results.
@@ -14,6 +35,7 @@ devops-code-remediation-agent:
       - Example: "Help me analyze the git url https://github.com/example/webapp.git and branch development of the repository webapp for any code issues and provide me remediated code."
 devops-test-case-generator-agent:
   name: Test Case Generator Agent
+  type: bedrock
   instructions: |
     ## Instructions
     Provide the git URL and branch of the repository to generate unit tests. This agent will analyze the repository code and generate appropriate test cases for your files.
@@ -32,4 +54,21 @@ devops-test-case-generator-agent:
     - How can I write effective unit tests for my <<framework_name>> application?
       - Example: "How can I write effective unit tests for my React application?"
       - Example: "How can I write effective unit tests for my Django application?"
+name-lookup:
+  name: Name Lookup
+  type: mcp
+  instructions: |
+    ## Instructions
+    Provide the name of the person to lookup. This agent will provide the results.
 
+    ## Sample Prompts
+    - What is the phone number of <<name>>?
+      - Example: "What is the phone number of John Doe?"
+    - What is the email address of <<name>>?
+      - Example: "What is the email address of Jane Smith?"
+    - What is the address of <<name>>?
+      - Example: "What is the address of Bob Johnson?"
+  command: python3
+  server_script: ["mcp_servers/name_lookup_server.py"]
+  system_prompt : |
+    You are a helpful assistant with access to name lookup tools. Always provide clear responses.
