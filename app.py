@@ -73,6 +73,16 @@ class BedrockChatApp:
 
             st.session_state.waiting_for_response = True
 
+            conversation_history = ''
+            if agent_type == 'mcp' and user_id in st.session_state.conversation_history and \
+                len(st.session_state.conversation_history[user_id]) > 0:
+                for message in reversed(st.session_state.conversation_history[user_id]):
+                    if message['role'] == 'assistant':
+                        conversation_history += message['content'] + "\n"
+                        break
+                prompt = conversation_history + "\n" + prompt
+
+
             # Get response from Bedrock
             full_response = self.agent_manager.invoke_agent(
                 prompt,
