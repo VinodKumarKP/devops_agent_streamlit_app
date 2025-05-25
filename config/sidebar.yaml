@@ -16,7 +16,7 @@ deployment-release-manager-agent:
   servers: [
     {
       'name': 'scan_result_server',
-      'command': 'python3',
+      'command': 'python3.11',
       'args': [ 'mcp_servers/scan_results.py' ],
       'description': 'Security scanning and analysis tools'
     }
@@ -80,7 +80,7 @@ name-lookup:
   servers: [
     {
       'name': 'name_lookup_server',
-      'command': 'python3',
+      'command': 'python3.11',
       'args': [ 'mcp_servers/name_lookup_server.py' ],
       'description': 'Name lookup tools'
     }
