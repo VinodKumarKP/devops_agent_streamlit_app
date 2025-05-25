@@ -13,8 +13,14 @@ deployment-release-manager-agent:
       - Example: "What are the recommendations for my project with high test coverage?"
     - What are the recommendations for <<project_name>> with high test coverage and high code quality?
       - Example: "What are the recommendations for my project with high test coverage and high code quality?"
-  command: python
-  server_script: [ "mcp_servers/scan_results.py" ]
+  servers: [
+    {
+      'name': 'scan_result_server',
+      'command': 'python3',
+      'args': [ 'mcp_servers/scan_results.py' ],
+      'description': 'Security scanning and analysis tools'
+    }
+  ]
   system_prompt: |
     You are a helpful assistant with access to code scan result tool. 
     Analyze the code scan result of the provided project and summarize the results. If the prompt already has the scan results, use those results directly.
@@ -71,7 +77,13 @@ name-lookup:
       - Example: "What is the email address of Jane Smith?"
     - What is the address of <<name>>?
       - Example: "What is the address of Bob Johnson?"
-  command: python3
-  server_script: ["mcp_servers/name_lookup_server.py"]
-  system_prompt : |
+  servers: [
+    {
+      'name': 'name_lookup_server',
+      'command': 'python3',
+      'args': [ 'mcp_servers/name_lookup_server.py' ],
+      'description': 'Name lookup tools'
+    }
+  ]
+  system_prompt: |
     You are a helpful assistant with access to name lookup tools. Always provide clear responses.

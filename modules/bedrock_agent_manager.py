@@ -1,4 +1,3 @@
-import subprocess
 import time
 from typing import Optional, Dict
 
@@ -33,7 +32,7 @@ class BedrockAgentManager:
             list: List of agent dictionaries
         """
         response = self.bedrock_agent_client.list_agents()
-        return [ agent['agentName'] for agent in response['agentSummaries']]
+        return [agent['agentName'] for agent in response['agentSummaries']]
 
     def get_agent_id(self, agent_name: str) -> str:
         """
@@ -142,8 +141,7 @@ class BedrockAgentManager:
 
                 return full_response
             else:
-                self.mcp_client.set_command(self.which(agent_config.get('command')))
-                self.mcp_client.set_server_script(agent_config.get('server_script', []))
+                self.mcp_client.add_servers(agent_config.get('servers', []))
                 self.mcp_client.set_system_prompt(agent_config.get('system_prompt'))
                 self.mcp_client.set_progress_callback(self.progress_callable)
                 return self.mcp_client.process_mcp_response(prompt, user_id)
@@ -153,13 +151,6 @@ class BedrockAgentManager:
             st.error(error_msg)
             st.session_state.response_queue.put((user_id, error_msg, True))
             return None
-
-    def which(self, program):
-        try:
-            result = subprocess.run(['which', program], capture_output=True, text=True, check=True)
-            return result.stdout.strip()
-        except subprocess.CalledProcessError:
-            raise RuntimeError(f"'{program}' is not found in the system path.")
 
     def progress_callable(self, message: str):
         """
