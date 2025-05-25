@@ -31,6 +31,7 @@ class MCPBedrockClient:
         self.command = None
         self.server_script = None
         self.system_prompt = None
+        self.progress_callback = None
 
     def set_command(self, command: str):
         """Set the command to be used for the MCP server"""
@@ -59,11 +60,14 @@ class MCPBedrockClient:
 
         self.system_prompt = system_prompt
 
+    def set_progress_callback(self, callback):
+        """Set the progress callback to be used for the MCP server"""
+        self.progress_callback = callback
 
     async def initialize_mcp_session(self):
         """Initialize MCP session once and reuse"""
         try:
-            logger.info("Initializing MCP session...")
+            self.progress_callback("Initializing MCP session...")
 
             if self.server_script is None:
                 raise ValueError("Server script not set. Please set the server script before initializing.")
@@ -95,7 +99,7 @@ class MCPBedrockClient:
                     'description': tool.description,
                     'schema': tool.inputSchema
                 }
-                logger.info(f"Loaded tool: {tool.name}")
+                self.progress_callback(f"Loaded tool: {tool.name}")
 
             return True
 
@@ -117,7 +121,7 @@ class MCPBedrockClient:
     async def execute_mcp_tool(self, tool_name: str, arguments: Dict[str, Any]) -> str:
         """Execute a tool via MCP using existing session"""
         try:
-            logger.info(f"Executing MCP tool: {tool_name} with args: {arguments}")
+            self.progress_callback(f"Executing MCP tool: {tool_name} with args: {arguments}")
 
             result = await self.mcp_session.call_tool(tool_name, arguments)
 
@@ -209,7 +213,7 @@ class MCPBedrockClient:
                     return "Task completed successfully using MCP tools."
                 return text_response
 
-            logger.info(f"Iteration {iteration_count}: Executing {len(tool_calls)} MCP tools")
+            self.progress_callback(f"Iteration {iteration_count}: Executing {len(tool_calls)} MCP tools")
 
             conversation_history.append({
                 "role": "assistant",
@@ -247,6 +251,7 @@ class MCPBedrockClient:
             }
 
             try:
+                self.progress_callback("Continuing conversation with Bedrock...")
                 next_response = self.bedrock_client.invoke_model(
                     modelId=self.model_id,
                     body=json.dumps(body)

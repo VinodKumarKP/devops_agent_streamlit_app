@@ -115,6 +115,11 @@ class BedrockChatApp:
         # Render sidebar and get selected agent
         agent_name,agent_key, agent_type = self.ui_manager.render_sidebar(self.config_manager.config)
 
+        # Clear conversation history if a new agent is selected
+        if st.session_state.previous_agent_key != agent_key:
+            st.session_state.conversation_history = {}
+            st.session_state.previous_agent_key = agent_key
+
         # Set app title
         self.ui_manager.display_header(self.config_manager.config[agent_key]['name'])
 

@@ -40,3 +40,10 @@ class SessionManager:
         # Response streaming
         if "response_queue" not in st.session_state:
             st.session_state.response_queue = queue.Queue()
+
+        # Track the previously selected agent
+        if 'previous_agent_key' not in st.session_state:
+            st.session_state.previous_agent_key = None
+
+        if 'placeholder' not in st.session_state:
+            st.session_state.placeholder = None

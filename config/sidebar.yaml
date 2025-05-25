@@ -16,7 +16,9 @@ deployment-release-manager-agent:
   command: python
   server_script: [ "mcp_servers/scan_results.py" ]
   system_prompt: |
-    You are a helpful assistant with access to code scan result tool. Analyze the code scan result of the provided project and summarize the results. Based on that analysis, provide a list of recommended actions 
+    You are a helpful assistant with access to code scan result tool. 
+    Analyze the code scan result of the provided project and summarize the results. If the prompt already has the scan results, use those results directly.
+    Based on that analysis, provide a list of recommended actions 
     and also indicate whether the project is ready for deployment or not.
 devops-code-remediation-agent:
   name: DevOps Code Remediation Agent
@@ -60,6 +62,7 @@ name-lookup:
   instructions: |
     ## Instructions
     Provide the name of the person to lookup. This agent will provide the results.
+    If the available tools does not solve the query, then use bedrock to get the answer.
 
     ## Sample Prompts
     - What is the phone number of <<name>>?
