@@ -36,6 +36,7 @@ class MCPServerSession:
     """Manages a single MCP server session"""
 
     def __init__(self, config: MCPServerConfig):
+        self.initialization_error = None
         self.config = config
         self.stdio_context = None
         self.session_context = None
@@ -59,7 +60,16 @@ class MCPServerSession:
             self.session_context = ClientSession(self.read, self.write)
             self.mcp_session = await self.session_context.__aenter__()
 
-            await self.mcp_session.initialize()
+            try:
+                await asyncio.wait_for(self.mcp_session.initialize(), timeout=15.0)
+            except asyncio.TimeoutError:
+                self.initialization_error = "MCP session initialization timed out"
+                logger.error(f"Server '{self.config.name}' initialization timed out")
+                return False
+            except Exception as e:
+                self.initialization_error = f"MCP session initialization failed: {str(e)}"
+                logger.error(f"Server '{self.config.name}' initialization failed: {e}")
+                return False
 
             # Load tools from this server
             tools_response = await self.mcp_session.list_tools()
@@ -401,7 +411,7 @@ class MCPBedrockClient:
             if not self.mcp_initialized:
                 success = await self.initialize_mcp_sessions()
                 if not success:
-                    return "Error: Could not initialize MCP tools"
+                    return "Error: Could not initialize MCP tools. Please check server configurations, syntax or import errors in the MCP server scripts."
 
             # Query with MCP support
             response = await self.query_bedrock_with_mcp(prompt)
