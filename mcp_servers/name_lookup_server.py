@@ -4,13 +4,14 @@ MCP Server for Name Lookup Tools
 Run with: python name_lookup_server.py
 """
 
-import asyncio
 import logging
-import nest_asyncio # Added import
-nest_asyncio.apply() # Added call
 
-from typing import List
+import nest_asyncio  # Added import
+
+nest_asyncio.apply()  # Added call
+
 from fastmcp import FastMCP
+
 # from pydantic import BaseModel # Removed unused import
 
 # Configure logging

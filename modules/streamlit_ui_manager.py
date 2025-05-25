@@ -16,7 +16,6 @@ class StreamlitUIManager:
     def __init__(self, bedrock_agent_manager: BedrockAgentManager):
         self.bedrock_agent_manager = bedrock_agent_manager
 
-
     def configure_page(self):
         """Configure Streamlit page settings."""
         st.set_page_config(
@@ -74,20 +73,19 @@ class StreamlitUIManager:
             option_list.update(
                 {values['name']: f"{key}:{values['name']}:{values['type']}" for key, values in config.items() if
                  values['type'] == 'mcp'})
-            option_list.update({values['name']:f"{key}:{agent}:{values['type']}"
-                           for agent in agent_list for key,values in config.items() if key in agent})
+            option_list.update({values['name']: f"{key}:{agent}:{values['type']}"
+                                for agent in agent_list for key, values in config.items() if key in agent})
 
             agent_name = st.selectbox(
                 "Select Bedrock Agent",
                 options=[
-                        option for option in option_list.keys()
+                    option for option in option_list.keys()
                 ]
             )
 
             agent_key = option_list[agent_name].split(":")[0]
             agent_type = option_list[agent_name].split(":")[2]
             agent_name = option_list[agent_name].split(":")[1]
-
 
             st.divider()
 
@@ -99,7 +97,7 @@ class StreamlitUIManager:
             # )
             st.markdown(config[agent_key]['instructions'], unsafe_allow_html=True)
 
-        return agent_name,agent_key, agent_type
+        return agent_name, agent_key, agent_type
 
     def render_chat_history(self, user_id: str, conversation_history: Dict):
         """
@@ -117,7 +115,7 @@ class StreamlitUIManager:
                 if role == "user":
                     st.chat_message("user", avatar=Constants.USER_AVATAR).write(content)
                 else:
-                    st.chat_message("assistant", avatar = Constants.ASSISTANT_AVATAR).write(content)
+                    st.chat_message("assistant", avatar=Constants.ASSISTANT_AVATAR).write(content)
 
     def process_response_queue(self):
         """Process any queued streaming responses."""
@@ -136,7 +134,6 @@ class StreamlitUIManager:
 
                 except queue.Empty:
                     pass
-
 
     def load_css(self):
         """Load CSS styles for the application."""

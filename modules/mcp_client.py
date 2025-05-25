@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import subprocess
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 
 import boto3
 from mcp import StdioServerParameters, stdio_client, ClientSession

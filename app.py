@@ -75,13 +75,12 @@ class BedrockChatApp:
 
             conversation_history = ''
             if agent_type == 'mcp' and user_id in st.session_state.conversation_history and \
-                len(st.session_state.conversation_history[user_id]) > 0:
+                    len(st.session_state.conversation_history[user_id]) > 0:
                 for message in reversed(st.session_state.conversation_history[user_id]):
                     if message['role'] == 'assistant':
                         conversation_history += message['content'] + "\n"
                         break
                 prompt = conversation_history + "\n" + prompt
-
 
             # Get response from Bedrock
             full_response = self.agent_manager.invoke_agent(
@@ -113,7 +112,7 @@ class BedrockChatApp:
     def chat_interface(self):
         """Display and manage the chat interface."""
         # Render sidebar and get selected agent
-        agent_name,agent_key, agent_type = self.ui_manager.render_sidebar(self.config_manager.config)
+        agent_name, agent_key, agent_type = self.ui_manager.render_sidebar(self.config_manager.config)
 
         # Clear conversation history if a new agent is selected
         if st.session_state.previous_agent_key != agent_key:

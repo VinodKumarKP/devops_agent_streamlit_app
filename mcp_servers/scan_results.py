@@ -7,7 +7,8 @@ Provides methods to collect dummy scan results from Sonar, Fortify, and Nexus
 import random
 import uuid
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Dict, Any
+
 from fastmcp import FastMCP
 
 # Initialize FastMCP
