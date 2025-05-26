@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import subprocess
+import time
 from typing import Dict, Any, List, Optional
 
 import boto3
@@ -314,6 +315,7 @@ class MCPBedrockClient:
                 **self.get_bedrock_tools_config()
             }
 
+            self.progress_callback("Sending prompt to Bedrock for parsing and coming up with action plan...")
             logger.info(f"Sending request to Bedrock: {user_message}")
 
             response = self.bedrock_client.invoke_model(
@@ -322,6 +324,7 @@ class MCPBedrockClient:
             )
 
             response_body = json.loads(response['body'].read())
+            self.progress_callback(f"Received response from Bedrock")
             return await self.process_response_with_mcp(response_body, messages)
 
         except Exception as e:
@@ -362,6 +365,11 @@ class MCPBedrockClient:
 
             # Execute MCP tools using appropriate server sessions
             tool_results = []
+
+            # Building tool call sequence for logging and debugging as multiline text
+            tool_call_sequence = "<br>".join([f"{index+1}. {tool_call.get('name', '')} - {tool_call.get('input', {})}" for index, tool_call in enumerate(tool_calls)])
+            self.progress_callback(f"Tool call sequence:<br>{tool_call_sequence}")
+
             for tool_call in tool_calls:
                 tool_name = tool_call.get('name')
                 tool_input = tool_call.get('input', {})

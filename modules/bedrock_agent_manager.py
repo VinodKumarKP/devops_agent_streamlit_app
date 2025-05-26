@@ -179,7 +179,7 @@ class BedrockAgentManager:
                     }}
 
                     .progress-box-{step_id} {{
-                        width: 520px;
+                        width: auto;
                         height: 90px;
                         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         border: 2px solid transparent;
